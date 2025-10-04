@@ -230,7 +230,17 @@ app.post("/api/call", async (req, res) => {
         },
         // Use assistantId if provided and not empty, otherwise use inline assistant config
         ...(config.assistantId && config.assistantId.trim() !== ""
-          ? { assistantId: config.assistantId }
+          ? { 
+              assistantId: config.assistantId,
+              // Try to override with custom prompt if provided
+              ...(customPrompt ? { 
+                assistantOverrides: {
+                  model: {
+                    messages: [{ role: "system", content: customPrompt }]
+                  }
+                }
+              } : {})
+            }
           : { assistant: assistantConfig }),
       }),
     });
