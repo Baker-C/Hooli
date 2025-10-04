@@ -108,6 +108,9 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
   },
 };
 
+// In-memory call store (webhook-updated)
+const calls = new Map();
+
 // Get current configuration
 app.get("/api/config", (req, res) => {
   res.json({
@@ -206,6 +209,12 @@ app.post("/api/call", async (req, res) => {
     }
 
     // Create a phone call using Vapi API
+    console.log("📞 Initiating Vapi call", {
+      usingAssistantId: Boolean(config.assistantId && config.assistantId.trim() !== ""),
+      phoneNumberId: config.phoneNumber,
+      customerNumber: phoneNumber,
+    });
+
     const response = await fetch("https://api.vapi.ai/call/phone", {
       method: "POST",
       headers: {
@@ -230,10 +239,23 @@ app.post("/api/call", async (req, res) => {
       throw new Error(data.message || "Failed to initiate call");
     }
 
+    // Seed call record
+    calls.set(data.id, {
+      callId: data.id,
+      status: "queued",
+      transcript: "",
+      summary: undefined,
+      lastUpdate: Date.now(),
+    });
+
+    const statusUrl = `/api/voice/call/${data.id}`;
+    console.log("✅ Vapi call created", { callId: data.id, statusUrl, fetch: `/api/call/${data.id}` });
+    res.set("Location", statusUrl);
     res.json({
       success: true,
       message: "Call initiated successfully",
       callId: data.id,
+      statusUrl,
       data: data,
     });
   } catch (error) {
@@ -257,8 +279,14 @@ app.get("/api/call/:callId", async (req, res) => {
   }
 
   try {
-    const fetch = (await import("node-fetch")).default;
+    // Prefer in-memory record (updated by webhook) if present
+    const local = calls.get(callId);
+    if (local) {
+      return res.json({ success: true, ...local });
+    }
 
+    // Fallback to Vapi API fetch if not found locally
+    const fetch = (await import("node-fetch")).default;
     const response = await fetch(`https://api.vapi.ai/call/${callId}`, {
       method: "GET",
       headers: {
@@ -266,17 +294,11 @@ app.get("/api/call/:callId", async (req, res) => {
         "Content-Type": "application/json",
       },
     });
-
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.message || "Failed to get call status");
     }
-
-    res.json({
-      success: true,
-      data: data,
-    });
+    res.json({ success: true, data });
   } catch (error) {
     console.error("Error getting call status:", error);
     res.status(500).json({
@@ -352,4 +374,63 @@ app.get("/health", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+
+// Return only call summary
+function getCallSummary(req, res) {
+  const { callId } = req.params;
+  const rec = calls.get(callId);
+  if (!rec) return res.status(404).json({ error: "Not found" });
+  return res.json({ summary: rec.summary || null });
+}
+
+app.get("/api/call/:callId/summary", getCallSummary);
+
+// Vapi webhook to update in-memory call store
+app.post("/api/webhooks/vapi", (req, res) => {
+  try {
+    const body = req.body;
+    const type = body?.message?.type || body?.type;
+    const callId = body?.message?.call?.id || body?.call?.id || body?.message?.session?.id;
+    if (!callId) return res.json({ ok: true });
+
+    if (type === "status" || type === "session.updated") {
+      const status = body?.message?.call?.status || body?.message?.session?.status;
+      const rec = calls.get(callId) || { callId, status: "queued", transcript: "", lastUpdate: Date.now() };
+      if (status) rec.status = status;
+      const recordingUrl = body?.message?.call?.recordingUrl || body?.call?.recordingUrl;
+      if (recordingUrl) rec.recordingUrl = recordingUrl;
+      rec.lastUpdate = Date.now();
+      calls.set(callId, rec);
+      if (status) console.log("📶 Call status update", { callId, status });
+    }
+
+    if (type === "transcript" || type === "transcript.part") {
+      const chunk = body?.message?.transcript ?? body?.artifact?.messages ?? "";
+      const text = Array.isArray(chunk) ? chunk.map((m) => (typeof m === "string" ? m : m?.text || "")).join("\n") : String(chunk || "");
+      const rec = calls.get(callId) || { callId, status: "in-progress", transcript: "", lastUpdate: Date.now() };
+      rec.transcript = (rec.transcript || "") + (text ? `\n${text}` : "");
+      rec.lastUpdate = Date.now();
+      calls.set(callId, rec);
+      if (text) console.log("📝 Transcript chunk", { callId, chars: text.length });
+    }
+
+    if (type === "end-of-call-report") {
+      const analysis = body?.message?.analysis || body?.analysis;
+      const summary = analysis?.summary || analysis?.notes || "No summary.";
+      const transcript = analysis?.transcript;
+      const rec = calls.get(callId) || { callId, transcript: "", lastUpdate: Date.now() };
+      rec.status = "ended";
+      if (summary) rec.summary = summary;
+      if (transcript) rec.transcript = transcript;
+      rec.lastUpdate = Date.now();
+      calls.set(callId, rec);
+      console.log("✅ End-of-call summary ready", { callId, summaryChars: (summary || '').length, fetch: `/api/call/${callId}` });
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("Vapi webhook error:", e);
+    res.status(200).json({ ok: true });
+  }
 });

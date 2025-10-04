@@ -1,6 +1,7 @@
 const express = require('express');
 const { validateWebhook } = require('../middleware/validation');
 const { WebhookProcessor } = require('../services/webhookProcessor');
+const { CallStore } = require('../services/callStore');
 
 const router = express.Router();
 const webhookProcessor = new WebhookProcessor();
@@ -73,6 +74,50 @@ router.get('/test', (req, res) => {
       voiceStatus: '/api/webhooks/voice-status'
     }
   });
+});
+
+/**
+ * POST /api/webhooks/vapi
+ * Handle Vapi call events (status updates, transcripts, end-of-call summaries)
+ */
+router.post('/vapi', async (req, res) => {
+  try {
+    const body = req.body;
+    const type = body?.message?.type || body?.type;
+
+    const callId = body?.message?.call?.id || body?.call?.id || body?.message?.session?.id;
+    if (!callId) return res.json({ ok: true });
+
+    if (type === 'status' || type === 'session.updated') {
+      const status = body?.message?.call?.status || body?.message?.session?.status;
+      if (status) CallStore.patch(callId, { status });
+    if (status) console.log('📶 Call status update', { callId, status });
+      const recordingUrl = body?.message?.call?.recordingUrl || body?.call?.recordingUrl;
+      if (recordingUrl) CallStore.patch(callId, { recordingUrl });
+    }
+
+    if (type === 'transcript' || type === 'transcript.part') {
+      const chunk = body?.message?.transcript ?? body?.artifact?.messages ?? '';
+      const text = Array.isArray(chunk) ? chunk.map(m => (typeof m === 'string' ? m : m?.text || '')).join('\n') : String(chunk || '');
+      const prev = CallStore.get(callId)?.transcript || '';
+      CallStore.patch(callId, { transcript: prev + (text ? `\n${text}` : '') });
+    if (text) console.log('📝 Transcript chunk', { callId, chars: text.length });
+    }
+
+    if (type === 'end-of-call-report') {
+      const analysis = body?.message?.analysis || body?.analysis;
+      const summary = analysis?.summary || analysis?.notes || 'No summary.';
+      const transcript = analysis?.transcript || CallStore.get(callId)?.transcript;
+      const recordingUrl = body?.message?.call?.recordingUrl || body?.call?.recordingUrl;
+      CallStore.patch(callId, { status: 'ended', summary, transcript, recordingUrl });
+    console.log('✅ End-of-call summary ready', { callId, summaryChars: (summary || '').length, fetch: `/api/voice/call/${callId}` });
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Vapi webhook error:', e);
+    res.status(200).json({ ok: true });
+  }
 });
 
 module.exports = router;

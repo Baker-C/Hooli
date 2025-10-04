@@ -114,7 +114,7 @@ function ConfigPanel({ config, onUpdateConfig, onUpdatePrompt }) {
             id="firstMessage"
             value={firstMessage}
             onChange={(e) => setFirstMessage(e.target.value)}
-            placeholder="Thank you for calling Hooli. This is Charles, your scheduling assistant. How may I help you today?"
+            placeholder="Hi this is Robbie. I'd like to change my order from 6 to 7"
           />
           <p className="input-hint">
             The greeting message when the call connects
