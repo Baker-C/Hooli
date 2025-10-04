@@ -352,7 +352,96 @@ Content-Type: application/json
 
 ---
 
-### 7. Health Check
+### 7. Get Call Summary by ID
+
+Fetch and summarize a call's transcript in one request.
+
+**Endpoint:** `GET /api/calls/:callId/summary`
+
+**URL Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| callId | string | Yes | The Vapi call ID to summarize |
+
+**Success Response:**
+
+**Code:** `200 OK`
+
+```json
+{
+  "success": true,
+  "summary": "Customer inquired about order #12345. Agent confirmed delivery tomorrow. Issue resolved.",
+  "transcript": "Full transcript text...",
+  "call": { ... },
+  "usage": {
+    "promptTokens": 120,
+    "completionTokens": 25,
+    "totalTokens": 145
+  }
+}
+```
+
+**Error Responses:**
+
+**Code:** `400 Bad Request`
+
+```json
+{
+  "success": false,
+  "message": "Vapi API key not configured"
+}
+```
+
+**Code:** `400 Bad Request`
+
+```json
+{
+  "success": false,
+  "message": "OpenAI API key not configured"
+}
+```
+
+**Code:** `500 Internal Server Error`
+
+```json
+{
+  "success": false,
+  "message": "Failed to generate summary"
+}
+```
+
+---
+
+### 8. Get Call Logs
+
+Fetch all calls from Vapi.
+
+**Endpoint:** `GET /api/calls`
+
+**Success Response:**
+
+**Code:** `200 OK`
+
+```json
+{
+  "success": true,
+  "calls": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "status": "ended",
+      "customer": {
+        "number": "+15105079026"
+      },
+      "createdAt": "2025-10-04T12:00:00.000Z",
+      "endedAt": "2025-10-04T12:05:30.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### 9. Health Check
 
 Check if the API is running.
 
@@ -425,6 +514,18 @@ curl -X POST http://localhost:3000/api/summarize \
     "transcript": "Customer called about billing issue. Resolved by adjusting payment plan. Customer satisfied.",
     "customInstructions": "Focus on the resolution and customer sentiment"
   }'
+```
+
+**Get Call Summary (by Call ID):**
+
+```bash
+curl http://localhost:3000/api/calls/550e8400-e29b-41d4-a716-446655440000/summary
+```
+
+**Get All Call Logs:**
+
+```bash
+curl http://localhost:3000/api/calls
 ```
 
 ---

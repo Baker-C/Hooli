@@ -210,7 +210,9 @@ app.post("/api/call", async (req, res) => {
 
     // Create a phone call using Vapi API
     console.log("📞 Initiating Vapi call", {
-      usingAssistantId: Boolean(config.assistantId && config.assistantId.trim() !== ""),
+      usingAssistantId: Boolean(
+        config.assistantId && config.assistantId.trim() !== ""
+      ),
       phoneNumberId: config.phoneNumber,
       customerNumber: phoneNumber,
     });
@@ -249,7 +251,11 @@ app.post("/api/call", async (req, res) => {
     });
 
     const statusUrl = `/api/voice/call/${data.id}`;
-    console.log("✅ Vapi call created", { callId: data.id, statusUrl, fetch: `/api/call/${data.id}` });
+    console.log("✅ Vapi call created", {
+      callId: data.id,
+      statusUrl,
+      fetch: `/api/call/${data.id}`,
+    });
     res.set("Location", statusUrl);
     res.json({
       success: true,
@@ -448,6 +454,112 @@ app.get("/api/calls/:callId/transcript", async (req, res) => {
   }
 });
 
+// Get summarized transcript for a specific call
+app.get("/api/calls/:callId/summary", async (req, res) => {
+  const { callId } = req.params;
+
+  if (!config.apiKey) {
+    return res.status(400).json({
+      success: false,
+      message: "Vapi API key not configured",
+    });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(400).json({
+      success: false,
+      message: "OpenAI API key not configured",
+    });
+  }
+
+  try {
+    const fetch = (await import("node-fetch")).default;
+
+    // First, fetch the call details from Vapi
+    const callResponse = await fetch(`https://api.vapi.ai/call/${callId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const callData = await callResponse.json();
+
+    if (!callResponse.ok) {
+      throw new Error(callData.message || "Failed to fetch call");
+    }
+
+    // Extract transcript
+    let transcriptText = "";
+
+    if (typeof callData.transcript === "string") {
+      transcriptText = callData.transcript;
+    } else if (Array.isArray(callData.transcript)) {
+      transcriptText = callData.transcript
+        .map((msg) => `${msg.role}: ${msg.message || msg.content}`)
+        .join("\n");
+    } else if (Array.isArray(callData.messages)) {
+      transcriptText = callData.messages
+        .map((msg) => `${msg.role}: ${msg.message || msg.content}`)
+        .join("\n");
+    } else {
+      transcriptText = JSON.stringify(
+        callData.transcript || callData.messages || "No transcript"
+      );
+    }
+
+    if (!transcriptText || transcriptText === "No transcript") {
+      return res.json({
+        success: true,
+        summary: "No transcript available for this call.",
+        transcript: transcriptText,
+        call: callData,
+      });
+    }
+
+    // Now summarize using OpenAI
+    const systemPrompt =
+      "You are a helpful assistant that summarizes call transcripts. Provide a brief 2-3 line summary that clearly states what the call was about, the main issue or request, and the outcome or resolution. Be concise and focus on the essential information.";
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: `Please summarize the following transcript in 2-3 lines:\n\n${transcriptText}`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 150,
+    });
+
+    const summary = completion.choices[0].message.content;
+
+    res.json({
+      success: true,
+      summary: summary,
+      transcript: transcriptText,
+      call: callData,
+      usage: {
+        promptTokens: completion.usage.prompt_tokens,
+        completionTokens: completion.usage.completion_tokens,
+        totalTokens: completion.usage.total_tokens,
+      },
+    });
+  } catch (error) {
+    console.error("Error generating summary:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to generate summary",
+    });
+  }
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
@@ -472,14 +584,22 @@ app.post("/api/webhooks/vapi", (req, res) => {
   try {
     const body = req.body;
     const type = body?.message?.type || body?.type;
-    const callId = body?.message?.call?.id || body?.call?.id || body?.message?.session?.id;
+    const callId =
+      body?.message?.call?.id || body?.call?.id || body?.message?.session?.id;
     if (!callId) return res.json({ ok: true });
 
     if (type === "status" || type === "session.updated") {
-      const status = body?.message?.call?.status || body?.message?.session?.status;
-      const rec = calls.get(callId) || { callId, status: "queued", transcript: "", lastUpdate: Date.now() };
+      const status =
+        body?.message?.call?.status || body?.message?.session?.status;
+      const rec = calls.get(callId) || {
+        callId,
+        status: "queued",
+        transcript: "",
+        lastUpdate: Date.now(),
+      };
       if (status) rec.status = status;
-      const recordingUrl = body?.message?.call?.recordingUrl || body?.call?.recordingUrl;
+      const recordingUrl =
+        body?.message?.call?.recordingUrl || body?.call?.recordingUrl;
       if (recordingUrl) rec.recordingUrl = recordingUrl;
       rec.lastUpdate = Date.now();
       calls.set(callId, rec);
@@ -488,25 +608,43 @@ app.post("/api/webhooks/vapi", (req, res) => {
 
     if (type === "transcript" || type === "transcript.part") {
       const chunk = body?.message?.transcript ?? body?.artifact?.messages ?? "";
-      const text = Array.isArray(chunk) ? chunk.map((m) => (typeof m === "string" ? m : m?.text || "")).join("\n") : String(chunk || "");
-      const rec = calls.get(callId) || { callId, status: "in-progress", transcript: "", lastUpdate: Date.now() };
+      const text = Array.isArray(chunk)
+        ? chunk
+            .map((m) => (typeof m === "string" ? m : m?.text || ""))
+            .join("\n")
+        : String(chunk || "");
+      const rec = calls.get(callId) || {
+        callId,
+        status: "in-progress",
+        transcript: "",
+        lastUpdate: Date.now(),
+      };
       rec.transcript = (rec.transcript || "") + (text ? `\n${text}` : "");
       rec.lastUpdate = Date.now();
       calls.set(callId, rec);
-      if (text) console.log("📝 Transcript chunk", { callId, chars: text.length });
+      if (text)
+        console.log("📝 Transcript chunk", { callId, chars: text.length });
     }
 
     if (type === "end-of-call-report") {
       const analysis = body?.message?.analysis || body?.analysis;
       const summary = analysis?.summary || analysis?.notes || "No summary.";
       const transcript = analysis?.transcript;
-      const rec = calls.get(callId) || { callId, transcript: "", lastUpdate: Date.now() };
+      const rec = calls.get(callId) || {
+        callId,
+        transcript: "",
+        lastUpdate: Date.now(),
+      };
       rec.status = "ended";
       if (summary) rec.summary = summary;
       if (transcript) rec.transcript = transcript;
       rec.lastUpdate = Date.now();
       calls.set(callId, rec);
-      console.log("✅ End-of-call summary ready", { callId, summaryChars: (summary || '').length, fetch: `/api/call/${callId}` });
+      console.log("✅ End-of-call summary ready", {
+        callId,
+        summaryChars: (summary || "").length,
+        fetch: `/api/call/${callId}`,
+      });
     }
 
     res.json({ ok: true });
