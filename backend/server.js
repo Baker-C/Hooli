@@ -160,7 +160,7 @@ app.post("/api/config/prompt", (req, res) => {
 
 // Trigger a phone call
 app.post("/api/call", async (req, res) => {
-  const { phoneNumber } = req.body;
+  const { phoneNumber, systemPrompt, prompt } = req.body;
 
   if (!phoneNumber) {
     return res.status(400).json({
@@ -179,6 +179,26 @@ app.post("/api/call", async (req, res) => {
   try {
     const fetch = (await import("node-fetch")).default;
 
+    // Use custom prompt if provided, otherwise use default config
+    const customPrompt = systemPrompt || prompt;
+    let assistantConfig = config.assistant;
+
+    if (customPrompt) {
+      // Create a copy of the assistant config with the custom prompt
+      assistantConfig = {
+        ...config.assistant,
+        model: {
+          ...config.assistant.model,
+          messages: [
+            {
+              role: "system",
+              content: customPrompt,
+            },
+          ],
+        },
+      };
+    }
+
     // Create a phone call using Vapi API
     const response = await fetch("https://api.vapi.ai/call/phone", {
       method: "POST",
@@ -194,7 +214,7 @@ app.post("/api/call", async (req, res) => {
         // Use assistantId if provided and not empty, otherwise use inline assistant config
         ...(config.assistantId && config.assistantId.trim() !== ""
           ? { assistantId: config.assistantId }
-          : { assistant: config.assistant }),
+          : { assistant: assistantConfig }),
       }),
     });
 

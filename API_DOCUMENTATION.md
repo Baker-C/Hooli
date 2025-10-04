@@ -32,7 +32,8 @@ Content-Type: application/json
 
 ```json
 {
-  "phoneNumber": "+15105079026"
+  "phoneNumber": "+15105079026",
+  "systemPrompt": "You are a helpful assistant..." // Optional
 }
 ```
 
@@ -40,6 +41,8 @@ Content-Type: application/json
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | phoneNumber | string | Yes | The phone number to call (E.164 format, including country code) |
+| systemPrompt | string | No | Custom system prompt for this specific call (overrides default) |
+| prompt | string | No | Alias for systemPrompt (either can be used) |
 
 **Success Response:**
 
@@ -307,6 +310,17 @@ curl -X POST http://localhost:3000/api/call \
   }'
 ```
 
+**Initiate a Call with Custom Prompt:**
+
+```bash
+curl -X POST http://localhost:3000/api/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "+15105079026",
+    "systemPrompt": "You are a scheduling assistant for Acme Corp. Help users book appointments."
+  }'
+```
+
 **Get Call Status:**
 
 ```bash
@@ -335,15 +349,20 @@ curl -X POST http://localhost:3000/api/config \
 **Initiate a Call:**
 
 ```javascript
-async function initiateCall(phoneNumber) {
+async function initiateCall(phoneNumber, customPrompt = null) {
+  const payload = { phoneNumber };
+  
+  // Add custom prompt if provided
+  if (customPrompt) {
+    payload.systemPrompt = customPrompt;
+  }
+
   const response = await fetch("http://localhost:3000/api/call", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      phoneNumber: phoneNumber,
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await response.json();
@@ -357,8 +376,16 @@ async function initiateCall(phoneNumber) {
   }
 }
 
-// Usage
+// Usage - Default prompt
 initiateCall("+15105079026")
+  .then((result) => console.log("Success:", result))
+  .catch((error) => console.error("Error:", error));
+
+// Usage - Custom prompt
+initiateCall(
+  "+15105079026",
+  "You are a helpful scheduling assistant. Help users book appointments."
+)
   .then((result) => console.log("Success:", result))
   .catch((error) => console.error("Error:", error));
 ```
@@ -388,10 +415,14 @@ getCallStatus("550e8400-e29b-41d4-a716-446655440000")
 import requests
 import json
 
-def initiate_call(phone_number):
+def initiate_call(phone_number, system_prompt=None):
     url = 'http://localhost:3000/api/call'
     headers = {'Content-Type': 'application/json'}
     data = {'phoneNumber': phone_number}
+    
+    # Add custom prompt if provided
+    if system_prompt:
+        data['systemPrompt'] = system_prompt
 
     response = requests.post(url, headers=headers, json=data)
     result = response.json()
@@ -403,9 +434,17 @@ def initiate_call(phone_number):
         print(f"Error: {result.get('message')}")
         raise Exception(result.get('message'))
 
-# Usage
+# Usage - Default prompt
 try:
     result = initiate_call('+15105079026')
+    print('Success:', result)
+except Exception as e:
+    print('Error:', e)
+
+# Usage - Custom prompt
+try:
+    custom_prompt = "You are a friendly customer support agent for TechCo. Help users with their technical issues."
+    result = initiate_call('+15105079026', custom_prompt)
     print('Success:', result)
 except Exception as e:
     print('Error:', e)
@@ -425,6 +464,44 @@ def get_call_status(call_id):
 status = get_call_status('550e8400-e29b-41d4-a716-446655440000')
 print('Call status:', status)
 ```
+
+---
+
+## Custom Prompts Per Call
+
+You can override the default system prompt for any individual call by including a `systemPrompt` (or `prompt`) field in the request body.
+
+### Use Cases
+
+- **Different departments**: Sales vs Support calls with different prompts
+- **A/B Testing**: Test different prompt variations
+- **Dynamic behavior**: Adjust assistant personality based on customer segment
+- **Temporary overrides**: One-time special instructions without changing default config
+
+### Example: Department-Specific Prompts
+
+```javascript
+// Sales call
+initiateCall('+15105079026', 
+  'You are a sales representative for Hooli. Be enthusiastic and focus on product benefits.'
+);
+
+// Support call
+initiateCall('+15105079026', 
+  'You are a technical support specialist. Be patient and help troubleshoot issues step by step.'
+);
+
+// Scheduling call (uses default prompt)
+initiateCall('+15105079026');
+```
+
+### Behavior
+
+- **With `systemPrompt`**: Uses the provided prompt for this call only
+- **Without `systemPrompt`**: Uses the default prompt from backend configuration
+- **With `assistantId`**: Custom prompt is **ignored**, Vapi assistant settings are used instead
+
+⚠️ **Note**: The custom prompt only works when using inline assistant configuration (no `assistantId` set).
 
 ---
 
