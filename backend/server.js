@@ -19,12 +19,12 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
+
       // Check if origin is in allowed list or is a Render domain
-      if (allowedOrigins.includes(origin) || origin.includes('.onrender.com')) {
+      if (allowedOrigins.includes(origin) || origin.includes(".onrender.com")) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
