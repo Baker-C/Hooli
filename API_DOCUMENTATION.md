@@ -1,6 +1,7 @@
 # Hooli Vapi API Documentation
 
 ## Base URL
+
 ```
 http://localhost:3000/api
 ```
@@ -8,6 +9,7 @@ http://localhost:3000/api
 ---
 
 ## Authentication
+
 The API requires a Vapi API key to be configured on the backend. No authentication is required for API calls to this backend service itself.
 
 ---
@@ -21,11 +23,13 @@ Make an AI-powered phone call using Vapi.
 **Endpoint:** `POST /api/call`
 
 **Request Headers:**
+
 ```
 Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "phoneNumber": "+15105079026"
@@ -61,6 +65,7 @@ Content-Type: application/json
 **Error Responses:**
 
 **Code:** `400 Bad Request`
+
 ```json
 {
   "success": false,
@@ -69,6 +74,7 @@ Content-Type: application/json
 ```
 
 **Code:** `400 Bad Request`
+
 ```json
 {
   "success": false,
@@ -77,6 +83,7 @@ Content-Type: application/json
 ```
 
 **Code:** `500 Internal Server Error`
+
 ```json
 {
   "success": false,
@@ -136,11 +143,13 @@ Update the Vapi configuration settings.
 **Endpoint:** `POST /api/config`
 
 **Request Headers:**
+
 ```
 Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "phoneNumber": "6a615c7a-c73e-4158-bf64-ffc02dd57192",
@@ -187,11 +196,13 @@ Update only the AI assistant's system prompt.
 **Endpoint:** `POST /api/config/prompt`
 
 **Request Headers:**
+
 ```
 Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "prompt": "You are a helpful customer service assistant..."
@@ -213,6 +224,7 @@ Content-Type: application/json
 **Error Response:**
 
 **Code:** `400 Bad Request`
+
 ```json
 {
   "success": false,
@@ -253,6 +265,7 @@ Retrieve the status of a specific call.
 **Error Response:**
 
 **Code:** `500 Internal Server Error`
+
 ```json
 {
   "success": false,
@@ -285,6 +298,7 @@ Check if the API is running.
 ### cURL
 
 **Initiate a Call:**
+
 ```bash
 curl -X POST http://localhost:3000/api/call \
   -H "Content-Type: application/json" \
@@ -294,11 +308,13 @@ curl -X POST http://localhost:3000/api/call \
 ```
 
 **Get Call Status:**
+
 ```bash
 curl http://localhost:3000/api/call/550e8400-e29b-41d4-a716-446655440000
 ```
 
 **Update Configuration:**
+
 ```bash
 curl -X POST http://localhost:3000/api/config \
   -H "Content-Type: application/json" \
@@ -317,36 +333,38 @@ curl -X POST http://localhost:3000/api/config \
 ### JavaScript (Node.js/Browser)
 
 **Initiate a Call:**
+
 ```javascript
 async function initiateCall(phoneNumber) {
-  const response = await fetch('http://localhost:3000/api/call', {
-    method: 'POST',
+  const response = await fetch("http://localhost:3000/api/call", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      phoneNumber: phoneNumber
-    })
+      phoneNumber: phoneNumber,
+    }),
   });
-  
+
   const data = await response.json();
-  
+
   if (data.success) {
-    console.log('Call initiated:', data.callId);
+    console.log("Call initiated:", data.callId);
     return data;
   } else {
-    console.error('Error:', data.message);
+    console.error("Error:", data.message);
     throw new Error(data.message);
   }
 }
 
 // Usage
-initiateCall('+15105079026')
-  .then(result => console.log('Success:', result))
-  .catch(error => console.error('Error:', error));
+initiateCall("+15105079026")
+  .then((result) => console.log("Success:", result))
+  .catch((error) => console.error("Error:", error));
 ```
 
 **Get Call Status:**
+
 ```javascript
 async function getCallStatus(callId) {
   const response = await fetch(`http://localhost:3000/api/call/${callId}`);
@@ -355,9 +373,9 @@ async function getCallStatus(callId) {
 }
 
 // Usage
-getCallStatus('550e8400-e29b-41d4-a716-446655440000')
-  .then(status => console.log('Call status:', status))
-  .catch(error => console.error('Error:', error));
+getCallStatus("550e8400-e29b-41d4-a716-446655440000")
+  .then((status) => console.log("Call status:", status))
+  .catch((error) => console.error("Error:", error));
 ```
 
 ---
@@ -365,6 +383,7 @@ getCallStatus('550e8400-e29b-41d4-a716-446655440000')
 ### Python
 
 **Initiate a Call:**
+
 ```python
 import requests
 import json
@@ -373,10 +392,10 @@ def initiate_call(phone_number):
     url = 'http://localhost:3000/api/call'
     headers = {'Content-Type': 'application/json'}
     data = {'phoneNumber': phone_number}
-    
+
     response = requests.post(url, headers=headers, json=data)
     result = response.json()
-    
+
     if result.get('success'):
         print(f"Call initiated: {result.get('callId')}")
         return result
@@ -393,6 +412,7 @@ except Exception as e:
 ```
 
 **Get Call Status:**
+
 ```python
 import requests
 
@@ -411,16 +431,19 @@ print('Call status:', status)
 ## Phone Number Format
 
 Phone numbers must be in **E.164 format**:
+
 - Start with `+` followed by country code
 - No spaces, dashes, or parentheses
 - Maximum 15 digits
 
 **Valid Examples:**
+
 - `+15105079026` (US)
 - `+442071234567` (UK)
 - `+919876543210` (India)
 
 **Invalid Examples:**
+
 - `5105079026` (missing country code)
 - `+1 (510) 507-9026` (contains formatting)
 - `+1-510-507-9026` (contains dashes)
@@ -445,7 +468,9 @@ You can check the call status at any time using the `callId`.
 The API supports two modes:
 
 ### Mode 1: Use Assistant ID (Recommended for Production)
+
 Configure your assistant in the Vapi dashboard and provide the `assistantId`:
+
 ```json
 {
   "assistantId": "46e48af1-38dd-4321-91eb-85d665f347f8"
@@ -453,7 +478,9 @@ Configure your assistant in the Vapi dashboard and provide the `assistantId`:
 ```
 
 ### Mode 2: Inline Configuration (Better for Testing)
+
 Leave `assistantId` empty and provide full configuration:
+
 ```json
 {
   "assistantId": "",
@@ -481,24 +508,24 @@ Leave `assistantId` empty and provide full configuration:
 
 ## Available Voice Options
 
-| Voice ID | Gender | Description |
-|----------|--------|-------------|
-| rachel | Female | Professional, clear |
-| josh | Male | Friendly, warm |
-| bella | Female | Energetic, young |
-| antoni | Male | Deep, authoritative |
-| elli | Female | Calm, soothing |
-| adam | Male | Natural, conversational |
+| Voice ID | Gender | Description             |
+| -------- | ------ | ----------------------- |
+| rachel   | Female | Professional, clear     |
+| josh     | Male   | Friendly, warm          |
+| bella    | Female | Energetic, young        |
+| antoni   | Male   | Deep, authoritative     |
+| elli     | Female | Calm, soothing          |
+| adam     | Male   | Natural, conversational |
 
 ---
 
 ## Error Codes
 
-| HTTP Code | Description |
-|-----------|-------------|
-| 200 | Success |
-| 400 | Bad Request - Missing or invalid parameters |
-| 500 | Internal Server Error - Server or Vapi API error |
+| HTTP Code | Description                                      |
+| --------- | ------------------------------------------------ |
+| 200       | Success                                          |
+| 400       | Bad Request - Missing or invalid parameters      |
+| 500       | Internal Server Error - Server or Vapi API error |
 
 ---
 
@@ -511,6 +538,7 @@ Rate limits are determined by your Vapi account plan. Check your Vapi dashboard 
 ## Support
 
 For issues or questions:
+
 - Check the main [README.md](./README.md)
 - Review [backend/README.md](./backend/README.md)
 - Contact the development team
@@ -522,6 +550,7 @@ For issues or questions:
 Before using the API, ensure the backend is configured:
 
 1. Create `backend/.env`:
+
 ```env
 VAPI_API_KEY=your_vapi_api_key_here
 VAPI_PHONE_NUMBER_ID=6a615c7a-c73e-4158-bf64-ffc02dd57192
@@ -530,6 +559,7 @@ PORT=3000
 ```
 
 2. Start the backend:
+
 ```bash
 cd backend
 npm install
@@ -537,6 +567,7 @@ npm start
 ```
 
 3. Verify it's running:
+
 ```bash
 curl http://localhost:3000/health
 ```
@@ -557,5 +588,4 @@ When deploying to production:
 
 ---
 
-*Last Updated: October 4, 2025*
-
+_Last Updated: October 4, 2025_
