@@ -41,8 +41,13 @@ Content-Type: application/json
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | phoneNumber | string | Yes | The phone number to call (E.164 format, including country code) |
-| systemPrompt | string | No | Custom system prompt for this specific call (overrides default) |
+| systemPrompt | string | No | Custom system prompt for this specific call |
 | prompt | string | No | Alias for systemPrompt (either can be used) |
+
+**How Custom Prompts Work:**
+- **Without assistantId**: Uses inline `assistant` config with your custom prompt
+- **With assistantId**: Attempts to use `assistantOverrides` to override the assistant's prompt
+- If Vapi doesn't support overrides with assistantId, clear the assistantId field to use custom prompts
 
 **Success Response:**
 
@@ -354,14 +359,20 @@ Content-Type: application/json
 
 ### 7. Get Call Summary by ID
 
-Fetch and summarize a call's transcript in one request.
+Fetch a call's transcript and generate a 2-3 line summary in one request. This endpoint combines fetching the call from Vapi and summarizing it with OpenAI.
 
 **Endpoint:** `GET /api/calls/:callId/summary`
 
 **URL Parameters:**
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| callId | string | Yes | The Vapi call ID to summarize |
+| callId | string | Yes | The Vapi call ID to summarize (UUID format) |
+
+**What It Does:**
+1. Fetches the call details from Vapi API
+2. Extracts the transcript (handles multiple formats)
+3. Generates a concise 2-3 line summary using OpenAI GPT-4o-mini
+4. Returns summary, transcript, call details, and token usage
 
 **Success Response:**
 
@@ -371,8 +382,14 @@ Fetch and summarize a call's transcript in one request.
 {
   "success": true,
   "summary": "Customer inquired about order #12345. Agent confirmed delivery tomorrow. Issue resolved.",
-  "transcript": "Full transcript text...",
-  "call": { ... },
+  "transcript": "Customer: Hi, I need help with my order...\nAgent: I'd be happy to help...",
+  "call": {
+    "id": "0199b165-6562-7eec-b015-e3e47ac4ced8",
+    "status": "ended",
+    "customer": { "number": "+15105079026" },
+    "createdAt": "2025-10-04T12:00:00.000Z",
+    "endedAt": "2025-10-04T12:05:30.000Z"
+  },
   "usage": {
     "promptTokens": 120,
     "completionTokens": 25,
@@ -380,6 +397,12 @@ Fetch and summarize a call's transcript in one request.
   }
 }
 ```
+
+**Use Cases:**
+- Automated call review and logging
+- Quick overview of customer interactions
+- Batch processing of call records
+- Integration with CRM systems
 
 **Error Responses:**
 
@@ -519,7 +542,20 @@ curl -X POST http://localhost:3000/api/summarize \
 **Get Call Summary (by Call ID):**
 
 ```bash
-curl http://localhost:3000/api/calls/550e8400-e29b-41d4-a716-446655440000/summary
+# Replace with your actual call ID
+curl http://localhost:3000/api/calls/0199b165-6562-7eec-b015-e3e47ac4ced8/summary
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "summary": "Customer contacted regarding delayed order. Agent provided tracking information and confirmed delivery by tomorrow.",
+  "transcript": "Full conversation transcript...",
+  "usage": {
+    "totalTokens": 145
+  }
+}
 ```
 
 **Get All Call Logs:**
@@ -574,6 +610,32 @@ initiateCall(
 )
   .then((result) => console.log("Success:", result))
   .catch((error) => console.error("Error:", error));
+```
+
+**Get Call Summary:**
+
+```javascript
+async function getCallSummary(callId) {
+  const response = await fetch(`http://localhost:3000/api/calls/${callId}/summary`);
+  const data = await response.json();
+  
+  if (data.success) {
+    console.log("Summary:", data.summary);
+    console.log("Tokens used:", data.usage.totalTokens);
+    return data;
+  } else {
+    console.error("Error:", data.message);
+    throw new Error(data.message);
+  }
+}
+
+// Usage
+getCallSummary("0199b165-6562-7eec-b015-e3e47ac4ced8")
+  .then(data => {
+    console.log("Summary:", data.summary);
+    console.log("Full transcript:", data.transcript);
+  })
+  .catch(error => console.error("Error:", error));
 ```
 
 **Get Call Status:**
@@ -679,6 +741,31 @@ Customer: Perfect, thank you!
 result = summarize_transcript(transcript_text, "Focus on the main issue and resolution")
 print('Summary:', result.get('summary'))
 print('Tokens used:', result.get('usage'))
+```
+
+**Get Call Summary:**
+
+```python
+import requests
+
+def get_call_summary(call_id):
+    url = f'http://localhost:3000/api/calls/{call_id}/summary'
+    response = requests.get(url)
+    data = response.json()
+    
+    if data.get('success'):
+        return data
+    else:
+        raise Exception(data.get('message'))
+
+# Usage
+try:
+    result = get_call_summary('0199b165-6562-7eec-b015-e3e47ac4ced8')
+    print('Summary:', result.get('summary'))
+    print('Transcript:', result.get('transcript'))
+    print('Tokens:', result.get('usage'))
+except Exception as e:
+    print('Error:', e)
 ```
 
 ---
