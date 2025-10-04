@@ -367,6 +367,87 @@ app.post("/api/summarize", async (req, res) => {
   }
 });
 
+// Get call logs from Vapi
+app.get("/api/calls", async (req, res) => {
+  if (!config.apiKey) {
+    return res.status(400).json({
+      success: false,
+      message: "Vapi API key not configured",
+    });
+  }
+
+  try {
+    const fetch = (await import("node-fetch")).default;
+
+    const response = await fetch("https://api.vapi.ai/call", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to fetch calls");
+    }
+
+    res.json({
+      success: true,
+      calls: data,
+    });
+  } catch (error) {
+    console.error("Error fetching calls:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch calls",
+    });
+  }
+});
+
+// Get transcript for a specific call
+app.get("/api/calls/:callId/transcript", async (req, res) => {
+  const { callId } = req.params;
+
+  if (!config.apiKey) {
+    return res.status(400).json({
+      success: false,
+      message: "Vapi API key not configured",
+    });
+  }
+
+  try {
+    const fetch = (await import("node-fetch")).default;
+
+    const response = await fetch(`https://api.vapi.ai/call/${callId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to fetch transcript");
+    }
+
+    res.json({
+      success: true,
+      transcript: data.transcript || data.messages || "No transcript available",
+      call: data,
+    });
+  } catch (error) {
+    console.error("Error fetching transcript:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch transcript",
+    });
+  }
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });

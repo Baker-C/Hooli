@@ -5,6 +5,7 @@ import ConfigPanel from "./components/ConfigPanel";
 import CallPanel from "./components/CallPanel";
 import CallHistory from "./components/CallHistory";
 import SummarizerPanel from "./components/SummarizerPanel";
+import CallLogsModal from "./components/CallLogsModal";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000/api";
 
@@ -67,6 +68,7 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
   });
   const [loading, setLoading] = useState(true);
   const [callHistory, setCallHistory] = useState([]);
+  const [showCallLogs, setShowCallLogs] = useState(false);
 
   useEffect(() => {
     fetchConfig();
@@ -140,8 +142,43 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Vapi Admin Panel</h1>
-        <p>Voice AI Configuration & Call Management</p>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            maxWidth: "1200px",
+            margin: "0 auto",
+            width: "100%",
+          }}
+        >
+          <div>
+            <h1>Vapi Admin Panel</h1>
+            <p>Voice AI Configuration & Call Management</p>
+          </div>
+          <button
+            onClick={() => setShowCallLogs(true)}
+            style={{
+              background: "white",
+              color: "#0366d6",
+              border: "2px solid white",
+              padding: "0.625rem 1.25rem",
+              borderRadius: "6px",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = "#f6f8fa";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = "white";
+            }}
+          >
+            View Call Logs
+          </button>
+        </div>
       </header>
 
       <div className="container">
@@ -156,6 +193,12 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
         <SummarizerPanel apiUrl={API_URL} />
         <CallHistory calls={callHistory} />
       </div>
+
+      <CallLogsModal
+        isOpen={showCallLogs}
+        onClose={() => setShowCallLogs(false)}
+        apiUrl={API_URL}
+      />
     </div>
   );
 }
