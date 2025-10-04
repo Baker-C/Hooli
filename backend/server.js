@@ -307,7 +307,7 @@ app.post("/api/summarize", async (req, res) => {
   try {
     const systemPrompt =
       customInstructions ||
-      "You are a helpful assistant that summarizes call transcripts. Provide a clear, concise summary highlighting key points, action items, and important details.";
+      "You are a helpful assistant that summarizes call transcripts. Provide a brief 2-3 line summary that clearly states what the call was about, the main issue or request, and the outcome or resolution. Be concise and focus on the essential information.";
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini", // Cost-effective model
@@ -318,11 +318,11 @@ app.post("/api/summarize", async (req, res) => {
         },
         {
           role: "user",
-          content: `Please summarize the following transcript:\n\n${transcript}`,
+          content: `Please summarize the following transcript in 2-3 lines:\n\n${transcript}`,
         },
       ],
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: 150,
     });
 
     const summary = completion.choices[0].message.content;
