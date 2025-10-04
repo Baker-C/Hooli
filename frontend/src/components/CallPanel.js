@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 
-function CallPanel({ onInitiateCall }) {
+function CallPanel({ onInitiateCall, config }) {
   const [phoneNumber, setPhoneNumber] = useState("+15105079026");
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [useCustomPrompt, setUseCustomPrompt] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [calling, setCalling] = useState(false);
 
@@ -53,13 +55,18 @@ function CallPanel({ onInitiateCall }) {
         formattedNumber = "+" + formattedNumber;
       }
 
-      const result = await onInitiateCall(formattedNumber);
+      const result = await onInitiateCall(
+        formattedNumber,
+        useCustomPrompt && customPrompt ? customPrompt : null
+      );
 
       setMessage({
         type: "success",
         text: `Call initiated successfully! Call ID: ${result.callId}`,
       });
       setPhoneNumber("");
+      setCustomPrompt("");
+      setUseCustomPrompt(false);
     } catch (error) {
       setMessage({
         type: "error",
@@ -94,10 +101,71 @@ function CallPanel({ onInitiateCall }) {
           </p>
         </div>
 
+        <div className="form-group">
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <input
+              type="checkbox"
+              checked={useCustomPrompt}
+              onChange={(e) => setUseCustomPrompt(e.target.checked)}
+              disabled={calling}
+              style={{ width: "auto", margin: 0 }}
+            />
+            Use custom prompt for this call
+          </label>
+        </div>
+
+        {useCustomPrompt && (
+          <div className="form-group">
+            <label htmlFor="customPrompt">Custom System Prompt</label>
+            <textarea
+              id="customPrompt"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              placeholder="Enter custom prompt for this call..."
+              rows={4}
+              disabled={calling}
+            />
+            <p className="input-hint">
+              Override the default prompt for this call only
+            </p>
+          </div>
+        )}
+
         <button type="submit" className="button" disabled={calling}>
           {calling ? "Initiating..." : "Start Call"}
         </button>
       </form>
+
+      {config?.assistant?.model?.messages?.[0]?.content && (
+        <div style={{ 
+          marginTop: "1.5rem", 
+          padding: "1rem", 
+          background: "#fafbfc", 
+          borderRadius: "4px",
+          border: "1px solid #e1e4e8"
+        }}>
+          <h3 style={{ 
+            fontSize: "0.875rem", 
+            marginBottom: "0.5rem", 
+            color: "#24292e",
+            fontWeight: 600
+          }}>
+            Default Prompt (Preview)
+          </h3>
+          <p style={{ 
+            fontSize: "0.8125rem", 
+            color: "#6a737d", 
+            lineHeight: "1.5",
+            whiteSpace: "pre-wrap",
+            margin: 0,
+            maxHeight: "100px",
+            overflow: "auto"
+          }}>
+            {config.assistant.model.messages[0].content.substring(0, 200)}
+            {config.assistant.model.messages[0].content.length > 200 && "..."}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

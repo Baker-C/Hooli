@@ -105,14 +105,20 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
     }
   };
 
-  const initiateCall = async (phoneNumber) => {
+  const initiateCall = async (phoneNumber, systemPrompt = null) => {
     try {
-      const response = await axios.post(`${API_URL}/call`, { phoneNumber });
+      const payload = { phoneNumber };
+      if (systemPrompt) {
+        payload.systemPrompt = systemPrompt;
+      }
+      
+      const response = await axios.post(`${API_URL}/call`, payload);
       const newCall = {
         id: response.data.callId,
         phoneNumber,
         timestamp: new Date().toISOString(),
         status: "initiated",
+        customPrompt: systemPrompt ? "Yes" : "No",
       };
       setCallHistory([newCall, ...callHistory]);
       return response.data;
@@ -144,7 +150,7 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
             onUpdateConfig={updateConfig}
             onUpdatePrompt={updatePrompt}
           />
-          <CallPanel onInitiateCall={initiateCall} />
+          <CallPanel onInitiateCall={initiateCall} config={config} />
         </div>
         <CallHistory calls={callHistory} />
       </div>
