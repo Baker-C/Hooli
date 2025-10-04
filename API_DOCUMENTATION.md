@@ -351,7 +351,7 @@ curl -X POST http://localhost:3000/api/config \
 ```javascript
 async function initiateCall(phoneNumber, customPrompt = null) {
   const payload = { phoneNumber };
-  
+
   // Add custom prompt if provided
   if (customPrompt) {
     payload.systemPrompt = customPrompt;
@@ -419,7 +419,7 @@ def initiate_call(phone_number, system_prompt=None):
     url = 'http://localhost:3000/api/call'
     headers = {'Content-Type': 'application/json'}
     data = {'phoneNumber': phone_number}
-    
+
     # Add custom prompt if provided
     if system_prompt:
         data['systemPrompt'] = system_prompt
@@ -482,17 +482,19 @@ You can override the default system prompt for any individual call by including 
 
 ```javascript
 // Sales call
-initiateCall('+15105079026', 
-  'You are a sales representative for Hooli. Be enthusiastic and focus on product benefits.'
+initiateCall(
+  "+15105079026",
+  "You are a sales representative for Hooli. Be enthusiastic and focus on product benefits."
 );
 
 // Support call
-initiateCall('+15105079026', 
-  'You are a technical support specialist. Be patient and help troubleshoot issues step by step.'
+initiateCall(
+  "+15105079026",
+  "You are a technical support specialist. Be patient and help troubleshoot issues step by step."
 );
 
 // Scheduling call (uses default prompt)
-initiateCall('+15105079026');
+initiateCall("+15105079026");
 ```
 
 ### Behavior
