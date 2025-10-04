@@ -1,0 +1,114 @@
+{
+  "textInputs": [
+    "Hello, I need help with my account",
+    "Can you help me resolve a billing issue?",
+    "I want to cancel my subscription",
+    "How do I reset my password?",
+    "I need to speak with customer support",
+    "My service isn't working properly",
+    "I have a question about my recent order",
+    "Can you transfer me to a human agent?",
+    "I'm having trouble logging in",
+    "What are your business hours?"
+  ],
+  "contexts": [
+    {
+      "userType": "premium",
+      "priority": "high",
+      "accountAge": "2 years",
+      "previousIssues": 1
+    },
+    {
+      "userType": "basic",
+      "priority": "normal",
+      "accountAge": "6 months",
+      "previousIssues": 0
+    },
+    {
+      "userType": "trial",
+      "priority": "low",
+      "accountAge": "1 week",
+      "previousIssues": 0
+    }
+  ],
+  "audioScenarios": [
+    {
+      "description": "Customer with billing question",
+      "expectedTranscription": "Hello, I have a question about my bill",
+      "mockAudioLength": 3000
+    },
+    {
+      "description": "Technical support request",
+      "expectedTranscription": "I'm having trouble with my service",
+      "mockAudioLength": 2500
+    },
+    {
+      "description": "Account cancellation request",
+      "expectedTranscription": "I want to cancel my account",
+      "mockAudioLength": 2000
+    }
+  ],
+  "webhookEvents": [
+    {
+      "event": "session.created",
+      "data": {
+        "sessionId": "test_session_123",
+        "userId": "user_456",
+        "timestamp": "2024-01-01T12:00:00Z"
+      }
+    },
+    {
+      "event": "session.message",
+      "data": {
+        "sessionId": "test_session_123",
+        "messageId": "msg_789",
+        "type": "user",
+        "content": "Hello, I need help",
+        "timestamp": "2024-01-01T12:01:00Z"
+      }
+    },
+    {
+      "event": "session.ended",
+      "data": {
+        "sessionId": "test_session_123",
+        "reason": "user_ended",
+        "duration": 300,
+        "timestamp": "2024-01-01T12:05:00Z"
+      }
+    }
+  ],
+  "errorScenarios": [
+    {
+      "description": "Invalid session ID",
+      "sessionId": "invalid_session",
+      "expectedError": "Session not found"
+    },
+    {
+      "description": "Empty text input",
+      "text": "",
+      "expectedError": "Text input is required"
+    },
+    {
+      "description": "Large audio file",
+      "audioSize": 50000000,
+      "expectedError": "File too large"
+    }
+  ],
+  "performanceTargets": {
+    "sessionCreation": {
+      "target": 500,
+      "unit": "ms",
+      "description": "Session creation should complete within 500ms"
+    },
+    "textProcessing": {
+      "target": 1000,
+      "unit": "ms",
+      "description": "Text processing should complete within 1 second"
+    },
+    "audioProcessing": {
+      "target": 3000,
+      "unit": "ms",
+      "description": "Audio processing should complete within 3 seconds"
+    }
+  }
+}

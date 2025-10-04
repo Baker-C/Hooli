@@ -1,0 +1,423 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "OMI Voice Integration",
+  "dateExported": "2024-01-01T00:00:00.000Z",
+  "version": "1.1",
+  "folders": [
+    {
+      "id": "health-folder",
+      "name": "Health & Status",
+      "containerId": "",
+      "created": "2024-01-01T00:00:00.000Z",
+      "sortNum": 10000
+    },
+    {
+      "id": "session-folder", 
+      "name": "Session Management",
+      "containerId": "",
+      "created": "2024-01-01T00:00:00.000Z",
+      "sortNum": 20000
+    },
+    {
+      "id": "voice-folder",
+      "name": "Voice Processing",
+      "containerId": "",
+      "created": "2024-01-01T00:00:00.000Z", 
+      "sortNum": 30000
+    },
+    {
+      "id": "webhook-folder",
+      "name": "Webhooks",
+      "containerId": "",
+      "created": "2024-01-01T00:00:00.000Z",
+      "sortNum": 40000
+    },
+    {
+      "id": "error-folder",
+      "name": "Error Testing",
+      "containerId": "",
+      "created": "2024-01-01T00:00:00.000Z",
+      "sortNum": 50000
+    }
+  ],
+  "requests": [
+    {
+      "id": "health-check",
+      "name": "Health Check",
+      "url": "http://localhost:3000/api/health",
+      "method": "GET",
+      "sortNum": 10000,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [],
+      "params": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "res-header",
+          "custom": "content-type",
+          "action": "contains",
+          "value": "application/json"
+        }
+      ],
+      "containerId": "health-folder"
+    },
+    {
+      "id": "create-session",
+      "name": "Create Session",
+      "url": "http://localhost:3000/api/voice/session",
+      "method": "POST",
+      "sortNum": 20000,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"userId\": \"test_user_123\",\n  \"context\": {\n    \"userType\": \"premium\",\n    \"priority\": \"high\",\n    \"testMode\": true\n  }\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.success",
+          "action": "equal",
+          "value": "true"
+        },
+        {
+          "type": "set-var",
+          "custom": "sessionId",
+          "action": "json-query",
+          "value": "json.sessionId"
+        }
+      ],
+      "containerId": "session-folder"
+    },
+    {
+      "id": "get-session",
+      "name": "Get Session Info",
+      "url": "http://localhost:3000/api/voice/session/{{sessionId}}",
+      "method": "GET",
+      "sortNum": 20100,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [],
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "containerId": "session-folder"
+    },
+    {
+      "id": "process-text-greeting",
+      "name": "Process Text - Greeting",
+      "url": "http://localhost:3000/api/voice/process-text",
+      "method": "POST",
+      "sortNum": 30000,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"text\": \"Hello, I need help with my account\",\n  \"context\": {\n    \"testMode\": true\n  }\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.success",
+          "action": "equal",
+          "value": "true"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.response",
+          "action": "istype",
+          "value": "string"
+        }
+      ],
+      "containerId": "voice-folder"
+    },
+    {
+      "id": "process-text-support",
+      "name": "Process Text - Support Request",
+      "url": "http://localhost:3000/api/voice/process-text",
+      "method": "POST",
+      "sortNum": 30100,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"text\": \"Can you help me resolve a billing issue?\",\n  \"context\": {\n    \"testMode\": true,\n    \"issueType\": \"billing\"\n  }\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.success",
+          "action": "equal",
+          "value": "true"
+        }
+      ],
+      "containerId": "voice-folder"
+    },
+    {
+      "id": "process-audio",
+      "name": "Process Audio - Upload File",
+      "url": "http://localhost:3000/api/voice/process-audio",
+      "method": "POST",
+      "sortNum": 30200,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [],
+      "body": {
+        "type": "formdata",
+        "raw": "",
+        "form": [
+          {
+            "name": "sessionId",
+            "value": "{{sessionId}}"
+          },
+          {
+            "name": "audio",
+            "value": "",
+            "isFile": true
+          },
+          {
+            "name": "context",
+            "value": "{\"testMode\": true}"
+          }
+        ]
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.success",
+          "action": "equal",
+          "value": "true"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.transcription",
+          "action": "istype",
+          "value": "string"
+        }
+      ],
+      "containerId": "voice-folder"
+    },
+    {
+      "id": "webhook-session-created",
+      "name": "Webhook - Session Created",
+      "url": "http://localhost:3000/api/webhooks/omi",
+      "method": "POST",
+      "sortNum": 40000,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"event\": \"session.created\",\n  \"data\": {\n    \"sessionId\": \"{{sessionId}}\",\n    \"userId\": \"test_user_123\",\n    \"timestamp\": \"2024-01-01T12:00:00Z\"\n  }\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "containerId": "webhook-folder"
+    },
+    {
+      "id": "webhook-session-message",
+      "name": "Webhook - Session Message",
+      "url": "http://localhost:3000/api/webhooks/omi",
+      "method": "POST",
+      "sortNum": 40100,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"event\": \"session.message\",\n  \"data\": {\n    \"sessionId\": \"{{sessionId}}\",\n    \"messageId\": \"msg_789\",\n    \"type\": \"user\",\n    \"content\": \"Hello, I need help\",\n    \"timestamp\": \"2024-01-01T12:01:00Z\"\n  }\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "200"
+        }
+      ],
+      "containerId": "webhook-folder"
+    },
+    {
+      "id": "error-invalid-session",
+      "name": "Error - Invalid Session",
+      "url": "http://localhost:3000/api/voice/process-text",
+      "method": "POST",
+      "sortNum": 50000,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"sessionId\": \"invalid_session_id\",\n  \"text\": \"This should fail\",\n  \"context\": {\n    \"testMode\": true\n  }\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.success",
+          "action": "equal",
+          "value": "false"
+        }
+      ],
+      "containerId": "error-folder"
+    },
+    {
+      "id": "error-empty-text",
+      "name": "Error - Empty Text",
+      "url": "http://localhost:3000/api/voice/process-text",
+      "method": "POST",
+      "sortNum": 50100,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"text\": \"\",\n  \"context\": {\n    \"testMode\": true\n  }\n}",
+        "form": []
+      },
+      "tests": [
+        {
+          "type": "res-code",
+          "custom": "",
+          "action": "equal",
+          "value": "400"
+        },
+        {
+          "type": "json-query",
+          "custom": "json.success",
+          "action": "equal",
+          "value": "false"
+        }
+      ],
+      "containerId": "error-folder"
+    }
+  ],
+  "environments": [
+    {
+      "id": "local-env",
+      "name": "Local Development",
+      "default": true,
+      "sortNum": 10000,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "data": [
+        {
+          "name": "baseUrl",
+          "value": "http://localhost:3000"
+        },
+        {
+          "name": "sessionId",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "production-env",
+      "name": "Production",
+      "default": false,
+      "sortNum": 20000,
+      "created": "2024-01-01T00:00:00.000Z",
+      "modified": "2024-01-01T00:00:00.000Z",
+      "data": [
+        {
+          "name": "baseUrl",
+          "value": "https://your-production-url.vercel.app"
+        },
+        {
+          "name": "sessionId",
+          "value": ""
+        }
+      ]
+    }
+  ]
+}
