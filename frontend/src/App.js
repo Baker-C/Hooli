@@ -111,7 +111,7 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
       if (systemPrompt) {
         payload.systemPrompt = systemPrompt;
       }
-      
+
       const response = await axios.post(`${API_URL}/call`, payload);
       const newCall = {
         id: response.data.callId,

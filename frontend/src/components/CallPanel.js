@@ -102,7 +102,9 @@ function CallPanel({ onInitiateCall, config }) {
         </div>
 
         <div className="form-group">
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <label
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+          >
             <input
               type="checkbox"
               checked={useCustomPrompt}
@@ -137,30 +139,36 @@ function CallPanel({ onInitiateCall, config }) {
       </form>
 
       {config?.assistant?.model?.messages?.[0]?.content && (
-        <div style={{ 
-          marginTop: "1.5rem", 
-          padding: "1rem", 
-          background: "#fafbfc", 
-          borderRadius: "4px",
-          border: "1px solid #e1e4e8"
-        }}>
-          <h3 style={{ 
-            fontSize: "0.875rem", 
-            marginBottom: "0.5rem", 
-            color: "#24292e",
-            fontWeight: 600
-          }}>
+        <div
+          style={{
+            marginTop: "1.5rem",
+            padding: "1rem",
+            background: "#fafbfc",
+            borderRadius: "4px",
+            border: "1px solid #e1e4e8",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "0.875rem",
+              marginBottom: "0.5rem",
+              color: "#24292e",
+              fontWeight: 600,
+            }}
+          >
             Default Prompt (Preview)
           </h3>
-          <p style={{ 
-            fontSize: "0.8125rem", 
-            color: "#6a737d", 
-            lineHeight: "1.5",
-            whiteSpace: "pre-wrap",
-            margin: 0,
-            maxHeight: "100px",
-            overflow: "auto"
-          }}>
+          <p
+            style={{
+              fontSize: "0.8125rem",
+              color: "#6a737d",
+              lineHeight: "1.5",
+              whiteSpace: "pre-wrap",
+              margin: 0,
+              maxHeight: "100px",
+              overflow: "auto",
+            }}
+          >
             {config.assistant.model.messages[0].content.substring(0, 200)}
             {config.assistant.model.messages[0].content.length > 200 && "..."}
           </p>

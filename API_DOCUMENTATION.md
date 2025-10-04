@@ -278,7 +278,81 @@ Retrieve the status of a specific call.
 
 ---
 
-### 6. Health Check
+### 6. Summarize Transcript
+
+Summarize a call transcript using OpenAI.
+
+**Endpoint:** `POST /api/summarize`
+
+**Request Headers:**
+
+```
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "transcript": "Full call transcript text here...",
+  "customInstructions": "Focus on action items" // Optional
+}
+```
+
+**Parameters:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| transcript | string | Yes | The full transcript text to summarize |
+| customInstructions | string | No | Custom instructions for the summary (e.g., "Focus on key decisions") |
+
+**Success Response:**
+
+**Code:** `200 OK`
+
+```json
+{
+  "success": true,
+  "summary": "The call discussed...",
+  "usage": {
+    "promptTokens": 250,
+    "completionTokens": 100,
+    "totalTokens": 350
+  }
+}
+```
+
+**Error Responses:**
+
+**Code:** `400 Bad Request`
+
+```json
+{
+  "success": false,
+  "message": "Transcript is required"
+}
+```
+
+**Code:** `400 Bad Request`
+
+```json
+{
+  "success": false,
+  "message": "OpenAI API key not configured"
+}
+```
+
+**Code:** `500 Internal Server Error`
+
+```json
+{
+  "success": false,
+  "message": "Failed to summarize transcript"
+}
+```
+
+---
+
+### 7. Health Check
 
 Check if the API is running.
 
@@ -339,6 +413,17 @@ curl -X POST http://localhost:3000/api/config \
         "voiceId": "bella"
       }
     }
+  }'
+```
+
+**Summarize Transcript:**
+
+```bash
+curl -X POST http://localhost:3000/api/summarize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transcript": "Customer called about billing issue. Resolved by adjusting payment plan. Customer satisfied.",
+    "customInstructions": "Focus on the resolution and customer sentiment"
   }'
 ```
 
@@ -463,6 +548,36 @@ def get_call_status(call_id):
 # Usage
 status = get_call_status('550e8400-e29b-41d4-a716-446655440000')
 print('Call status:', status)
+```
+
+**Summarize Transcript:**
+
+```python
+import requests
+
+def summarize_transcript(transcript, custom_instructions=None):
+    url = 'http://localhost:3000/api/summarize'
+    headers = {'Content-Type': 'application/json'}
+    data = {'transcript': transcript}
+
+    if custom_instructions:
+        data['customInstructions'] = custom_instructions
+
+    response = requests.post(url, headers=headers, json=data)
+    return response.json()
+
+# Usage
+transcript_text = """
+Customer: Hi, I need help with my order.
+Agent: I'd be happy to help. What's your order number?
+Customer: It's #12345.
+Agent: I see your order. It's scheduled for delivery tomorrow.
+Customer: Perfect, thank you!
+"""
+
+result = summarize_transcript(transcript_text, "Focus on the main issue and resolution")
+print('Summary:', result.get('summary'))
+print('Tokens used:', result.get('usage'))
 ```
 
 ---

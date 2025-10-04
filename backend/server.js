@@ -1,8 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const OpenAI = require("openai");
 
 dotenv.config();
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -276,6 +282,65 @@ app.get("/api/call/:callId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to get call status",
+    });
+  }
+});
+
+// Summarize transcript
+app.post("/api/summarize", async (req, res) => {
+  const { transcript, customInstructions } = req.body;
+
+  if (!transcript) {
+    return res.status(400).json({
+      success: false,
+      message: "Transcript is required",
+    });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(400).json({
+      success: false,
+      message: "OpenAI API key not configured",
+    });
+  }
+
+  try {
+    const systemPrompt =
+      customInstructions ||
+      "You are a helpful assistant that summarizes call transcripts. Provide a clear, concise summary highlighting key points, action items, and important details.";
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // Cost-effective model
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: `Please summarize the following transcript:\n\n${transcript}`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 500,
+    });
+
+    const summary = completion.choices[0].message.content;
+
+    res.json({
+      success: true,
+      summary: summary,
+      usage: {
+        promptTokens: completion.usage.prompt_tokens,
+        completionTokens: completion.usage.completion_tokens,
+        totalTokens: completion.usage.total_tokens,
+      },
+    });
+  } catch (error) {
+    console.error("Error summarizing transcript:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to summarize transcript",
     });
   }
 });
