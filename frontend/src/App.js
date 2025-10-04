@@ -4,6 +4,7 @@ import "./App.css";
 import ConfigPanel from "./components/ConfigPanel";
 import CallPanel from "./components/CallPanel";
 import CallHistory from "./components/CallHistory";
+import SummarizerPanel from "./components/SummarizerPanel";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000/api";
 
@@ -152,6 +153,7 @@ Remember: You're simulating a capable AI assistant that can complete real-world 
           />
           <CallPanel onInitiateCall={initiateCall} config={config} />
         </div>
+        <SummarizerPanel apiUrl={API_URL} />
         <CallHistory calls={callHistory} />
       </div>
     </div>
