@@ -35,6 +35,24 @@ app.use('/api/health', healthRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
+// General webhook endpoint for debugging - logs everything received
+app.post('/api/webhook', (req, res) => {
+  console.log('=== WEBHOOK RECEIVED ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('Query:', JSON.stringify(req.query, null, 2));
+  console.log('========================');
+  
+  res.json({
+    success: true,
+    message: 'Webhook received and logged',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({

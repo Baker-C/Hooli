@@ -1,37 +1,115 @@
 const express = require('express');
 const { validateWebhook } = require('../middleware/validation');
 const { WebhookProcessor } = require('../services/webhookProcessor');
-const { CallStore } = require('../services/callStore');
+const { sendOmiNotification } = require('../services/omiNotificationService');
 
 const router = express.Router();
 const webhookProcessor = new WebhookProcessor();
 
 /**
  * POST /api/webhooks/omi
- * Handle OMI webhooks
+ * Handle OMI webhooks - Simplified for text processing
  */
-router.post('/omi', validateWebhook, async (req, res) => {
+router.post('/omi', async (req, res) => {
   try {
-    const { event, data, timestamp } = req.body;
+    // Handle both structured OMI events and simple text input
+    const { text, message, transcript, event, data, uid, user_id, userId } = req.body;
+    
+    // Extract the actual text from various possible formats
+    const userText = text || message || transcript || (data && data.text) || (data && data.message);
+    
+    // Extract user ID from various possible formats
+    const extractedUserId = uid || user_id || userId || (data && data.uid) || (data && data.user_id) || (data && data.userId);
 
-    console.log(`Received OMI webhook: ${event}`, { timestamp, data });
+    // Enhanced logging for OMI webhook debugging
+    console.log('\n' + '🗣️ '.repeat(30));
+    console.log('🔔 OMI VOICE MESSAGE RECEIVED');
+    console.log('🗣️ '.repeat(30));
+    console.log('📅 Timestamp:', new Date().toISOString());
+    console.log('👤 User ID:', extractedUserId);
+    console.log('💬 User Said:', userText);
+    console.log('📦 Full Request:', JSON.stringify(req.body, null, 2));
+    console.log('🗣️ '.repeat(30) + '\n');
 
-    const result = await webhookProcessor.processOMIWebhook(event, data);
+    if (!userText) {
+      console.log('❌ No text found in request');
+      return res.status(400).json({
+        success: false,
+        error: 'No text content found in request'
+      });
+    }
 
-    res.json({
-      success: true,
-      message: 'Webhook processed successfully',
-      result
-    });
+    // Process the text and generate a response
+    const response = await processUserText(userText);
+
+    console.log('🤖 Bot Response:', response);
+
+    // Try to send OMI notification if user ID is available
+    if (extractedUserId) {
+      try {
+        console.log('📤 Attempting to send OMI notification...');
+        const notificationResult = await sendOmiNotification(extractedUserId, response);
+        console.log('✅ OMI notification sent successfully');
+        
+        // Return success response for webhook
+        res.json({
+          success: true,
+          message: 'Notification sent successfully',
+          notificationSent: true,
+          userId: extractedUserId,
+          response: response
+        });
+        
+      } catch (notificationError) {
+        console.error('❌ Failed to send OMI notification:', notificationError.message);
+        
+        // Fall back to JSON response if notification fails
+        res.json({
+          success: true,
+          message: response,
+          text: response,
+          response: response,
+          reply: response,
+          content: response,
+          notificationSent: false,
+          notificationError: notificationError.message
+        });
+      }
+    } else {
+      console.log('⚠️ No user ID found, returning JSON response');
+      
+      // Return JSON response if no user ID available
+      res.json({
+        success: true,
+        message: response,
+        text: response,
+        response: response,
+        reply: response,
+        content: response,
+        notificationSent: false,
+        reason: 'No user ID provided'
+      });
+    }
+
+    console.log('✅ Processing complete\n');
 
   } catch (error) {
-    console.error('OMI webhook processing error:', error);
+    console.error('❌ OMI webhook processing error:', error);
     res.status(500).json({
+      success: false,
       error: 'Webhook processing failed',
       message: error.message
     });
   }
 });
+
+/**
+ * Simple text processing function
+ */
+async function processUserText(text) {
+  // Default response as requested by user
+  return "I have heard you!";
+}
 
 /**
  * POST /api/webhooks/voice-status
