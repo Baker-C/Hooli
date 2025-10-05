@@ -169,7 +169,8 @@ app.post("/api/config/prompt", (req, res) => {
 
 // Trigger a phone call
 app.post("/api/call", async (req, res) => {
-  const { phoneNumber, systemPrompt, prompt } = req.body;
+  const { systemPrompt, prompt } = req.body;
+  const phoneNumber = '+17176156058';
 
   if (!phoneNumber) {
     return res.status(400).json({
